@@ -1,36 +1,131 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Unfinial AI - MVP Backend
 
-## Getting Started
+Backend MVP untuk Unfinial AI, asisten keuangan berbasis AI untuk UMKM.
 
-First, run the development server:
+## Fitur yang sudah tersedia
+
+- Manajemen user sederhana
+- Login + JWT (opsional untuk endpoint `*/me`)
+- Input transaksi:
+  - Manual via API
+  - Upload CSV/XLSX
+- Dashboard ringkas:
+  - Total revenue
+  - Total expense
+  - Net profit
+  - Margin
+  - Tren bulanan
+- AI Insights:
+  - Financial health score (0-100)
+  - Expense intelligence (deteksi biaya berulang + rekomendasi)
+- Prediksi cash flow 3-12 bulan:
+  - Linear Regression
+  - ARIMA (otomatis fallback ke linear jika data tidak cukup / gagal fit)
+- Endpoint chat keuangan berbasis data user
+
+## Stack
+
+- FastAPI
+- SQLAlchemy
+- PostgreSQL (default), SQLite (opsional lokal)
+- Pandas + Scikit-Learn + Statsmodels
+
+## Menjalankan lokal
+
+1. Buat virtual environment lalu install dependency:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+python -m pip install -r requirements.txt
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Salin env:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+cp .env.example .env
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+PowerShell:
 
-## Learn More
+```powershell
+Copy-Item .env.example .env
+```
 
-To learn more about Next.js, take a look at the following resources:
+3. Jalankan API:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+uvicorn app.main:app --reload
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+4. Buka docs:
 
-## Deploy on Vercel
+- Swagger UI: `http://127.0.0.1:8000/docs`
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Autentikasi (JWT)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Buat user: `POST /users`
+2. Login: `POST /auth/login` (email + password) -> dapat `access_token`
+3. Panggil endpoint berbasis user login dengan header:
+
+```text
+Authorization: Bearer <access_token>
+```
+
+Contoh endpoint:
+
+- `GET /dashboard/summary`
+- `GET /insights/health-score`
+- `GET /predictions/cash-flow`
+- `POST /transactions` dan `POST /transactions/upload/me`
+- `POST /chat/me`
+
+## OpenAI (opsional)
+
+Jika `OPENAI_API_KEY` diset, endpoint chat akan menggunakan LLM. Jika tidak, chat akan fallback ke rule-based.
+
+## Menjalankan dengan Docker
+
+```bash
+docker compose up --build
+```
+
+API akan tersedia di `http://127.0.0.1:8000`.
+
+## Frontend (Next.js)
+
+Project web ada di folder `web/`.
+
+1. Siapkan env:
+
+```powershell
+Copy-Item web/.env.example web/.env.local
+```
+
+2. Jalankan:
+
+```powershell
+cd web
+npm install
+npm run dev
+```
+
+Frontend akan tersedia di `http://127.0.0.1:3000`.
+
+## Struktur ringkas
+
+```text
+app/
+  main.py
+  core/config.py
+  database.py
+  models.py
+  schemas.py
+  routers/
+  services/
+```
+
+## Catatan penting
+
+- Rumus health score:
+  - `(Profit Margin * 40%) + (Cash Flow Stability * 30%) + (Expense Efficiency * 30%)`
+- Endpoint prediksi menyimpan histori ke tabel `predictions`.
+- Upload file menerima kolom minimal: `date`, `type`, `category`, `amount`.
